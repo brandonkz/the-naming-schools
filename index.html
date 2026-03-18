@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Naming Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f2eb;
+      --text: #2a2a2a;
+      --muted: #7a7568;
+      --card: #ffffff;
+      --border: #e0dcd4;
+      --placek: #8B6914;
+      --watkins: #2d6a4f;
+      --manning: #6b2f8a;
+    }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+    }
+
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sticky-header h1 {
+      font-size: 24px;
+      font-style: italic;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .sticky-header .subtitle {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    .intro {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .intro h2 {
+      font-size: 36px;
+      font-style: italic;
+      margin-bottom: 12px;
+    }
+
+    .intro p {
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .input-area {
+      margin-bottom: 40px;
+    }
+
+    .input-area textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 20px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      color: var(--text);
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+
+    .input-area textarea:focus {
+      outline: none;
+      border-color: var(--placek);
+    }
+
+    .input-area textarea::placeholder {
+      color: #b5b0a5;
+    }
+
+    .api-key-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+      align-items: center;
+    }
+
+    .api-key-row input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .api-key-row input:focus {
+      outline: none;
+      border-color: var(--placek);
+    }
+
+    .api-key-row label {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .generate-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .generate-btn:hover { opacity: 0.85; }
+    .generate-btn:active { transform: scale(0.99); }
+    .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0;
+    }
+
+    .tab {
+      padding: 12px 20px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .tab:hover { color: var(--text); }
+
+    .tab.active { color: var(--text); font-weight: 500; }
+    .tab.active[data-school="placek"] { border-bottom-color: var(--placek); color: var(--placek); }
+    .tab.active[data-school="watkins"] { border-bottom-color: var(--watkins); color: var(--watkins); }
+    .tab.active[data-school="manning"] { border-bottom-color: var(--manning); color: var(--manning); }
+
+    .tab .check {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 14px;
+    }
+
+    .name-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fadeUp 0.4s ease forwards;
+    }
+
+    .name-card.top-pick { border-top: 3px solid var(--border); }
+    .name-card.top-pick[data-school="placek"] { border-top-color: var(--placek); }
+    .name-card.top-pick[data-school="watkins"] { border-top-color: var(--watkins); }
+    .name-card.top-pick[data-school="manning"] { border-top-color: var(--manning); }
+
+    .name-card .name-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .name-card .top-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+      color: white;
+    }
+
+    .name-card .top-badge[data-school="placek"] { background: var(--placek); }
+    .name-card .top-badge[data-school="watkins"] { background: var(--watkins); }
+    .name-card .top-badge[data-school="manning"] { background: var(--manning); }
+
+    .name-card .origin {
+      font-size: 13px;
+      color: var(--muted);
+      font-style: italic;
+      font-family: 'Cormorant Garamond', serif;
+      margin-bottom: 8px;
+    }
+
+    .name-card .effect {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .verdict-box {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 24px;
+      border: 1px solid var(--border);
+      opacity: 0;
+      animation: fadeUp 0.4s ease forwards;
+    }
+
+    .verdict-box .verdict-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .verdict-box .verdict-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-style: italic;
+    }
+
+    .shortlist {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 2px solid var(--border);
+      opacity: 0;
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    .shortlist h3 {
+      font-size: 28px;
+      font-style: italic;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .shortlist-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .shortlist-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .shortlist-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    .shortlist-card .school-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .shortlist-card[data-school="placek"] .school-label { color: var(--placek); }
+    .shortlist-card[data-school="watkins"] .school-label { color: var(--watkins); }
+    .shortlist-card[data-school="manning"] .school-label { color: var(--manning); }
+
+    .shortlist-card .pick-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .shortlist-card .pick-effect {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .reset-btn {
+      display: block;
+      margin: 40px auto 0;
+      padding: 12px 32px;
+      background: transparent;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .reset-btn:hover {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
+    .loading-dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      padding: 40px 0;
+    }
+
+    .loading-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    footer {
+      text-align: center;
+      padding: 40px 24px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 60px;
+    }
+
+    .error-msg {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .shortlist-grid { grid-template-columns: 1fr; }
+      .tabs { overflow-x: auto; }
+      .tab { padding: 10px 14px; font-size: 12px; white-space: nowrap; }
+      .intro h2 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef } = React;
+
+    const SCHOOLS = {
+      placek: {
+        key: 'placek',
+        name: 'Placek / Lexicon',
+        color: 'var(--placek)',
+        system: `You are David Placek, founder of Lexicon Branding (creators of BlackBerry, Swiffer, Dasani, Febreze).
+
+Your naming philosophy:
+- Coin names from Latin and Greek roots
+- Use hard consonants (K, X, Z, V, B) for memorability
+- Keep names 1-2 syllables max
+- Name the TRANSFORMATION, not the function
+- Names must have global resonance — work in any language
+- Never use slang, puns, or trend-dependent words
+- The name should feel like it always existed
+
+Return ONLY valid JSON (no markdown, no code fences):
+{"candidates":[{"name":"...","origin":"Latin/Greek root explanation","effect":"What this name makes people feel/think"}],"topPick":"the best name from candidates","verdict":"One sentence explaining why this name wins"}`
+      },
+      watkins: {
+        key: 'watkins',
+        name: 'Watkins / Eat My Words',
+        color: 'var(--watkins)',
+        system: `You are Alexandra Watkins, founder of Eat My Words (named brands like Spoonflower, Church of Cupcakes, Gringo Lingo).
+
+Your naming philosophy — apply the SMILE test:
+- S: Suggestive — evokes something about the brand
+- M: Meaningful — resonates with the audience
+- I: Imagery-rich — paints a picture, is visual
+- L: Legs — lends itself to extensions, wordplay, campaigns
+- E: Emotional — makes you feel something, makes you smile
+
+Avoid SCRATCH names:
+- Spelling-challenged, Copycat, Restrictive, Annoying, Tame, Confusing, Hard-to-pronounce
+
+Names should be playful, human, warm. They should make someone smile when they hear it.
+
+Return ONLY valid JSON (no markdown, no code fences):
+{"candidates":[{"name":"...","origin":"What makes this SMILE","effect":"The imagery or feeling it creates"}],"topPick":"the best name from candidates","verdict":"One sentence explaining why this name wins"}`
+      },
+      manning: {
+        key: 'manning',
+        name: 'Manning / Igor',
+        color: 'var(--manning)',
+        system: `You are Steve Manning, founder of Igor International (named brands like Lululemon, Trulia, Roku).
+
+Your naming philosophy:
+- Names should be counterintuitive and provocative
+- Create curiosity or mild discomfort — interrupt pattern recognition
+- A name that makes someone stop mid-scroll has done its job
+- Safe names are forgotten names
+- The best names feel slightly wrong at first
+- Embrace weirdness, asymmetry, unexpected sounds
+- If everyone in the room likes it immediately, it's too safe
+
+Return ONLY valid JSON (no markdown, no code fences):
+{"candidates":[{"name":"...","origin":"Why this name is counterintuitive","effect":"The disruption or curiosity it creates"}],"topPick":"the best name from candidates","verdict":"One sentence explaining why this name wins"}`
+      }
+    };
+
+    function App() {
+      const [desc, setDesc] = useState('');
+      const [apiKey, setApiKey] = useState(localStorage.getItem('anthropic_key') || '');
+      const [loading, setLoading] = useState(false);
+      const [results, setResults] = useState({});
+      const [done, setDone] = useState({});
+      const [activeTab, setActiveTab] = useState('placek');
+      const [error, setError] = useState('');
+      const [showResults, setShowResults] = useState(false);
+
+      const allDone = done.placek && done.watkins && done.manning;
+
+      async function callSchool(school, description, key) {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1024,
+            system: school.system,
+            messages: [{
+              role: 'user',
+              content: `Generate exactly 4 brand name candidates for this product:\n\n${description}\n\nReturn only the JSON object with candidates array (4 items), topPick, and verdict. No markdown.`
+            }]
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.text();
+          throw new Error(`API error ${res.status}: ${err}`);
+        }
+
+        const data = await res.json();
+        const text = data.content[0].text.trim();
+        // Strip markdown fences if present
+        const clean = text.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+        return JSON.parse(clean);
+      }
+
+      async function generate() {
+        if (!desc.trim() || !apiKey.trim()) return;
+        localStorage.setItem('anthropic_key', apiKey);
+
+        setLoading(true);
+        setError('');
+        setResults({});
+        setDone({});
+        setShowResults(true);
+        setActiveTab('placek');
+
+        const schools = Object.values(SCHOOLS);
+        const promises = schools.map(async (school) => {
+          try {
+            const result = await callSchool(school, desc, apiKey);
+            setResults(prev => ({ ...prev, [school.key]: result }));
+            setDone(prev => ({ ...prev, [school.key]: true }));
+          } catch (e) {
+            setResults(prev => ({ ...prev, [school.key]: { error: e.message } }));
+            setDone(prev => ({ ...prev, [school.key]: true }));
+          }
+        });
+
+        await Promise.all(promises);
+        setLoading(false);
+      }
+
+      function reset() {
+        setDesc('');
+        setResults({});
+        setDone({});
+        setShowResults(false);
+        setError('');
+        setActiveTab('placek');
+      }
+
+      const schoolKeys = ['placek', 'watkins', 'manning'];
+
+      return (
+        <React.Fragment>
+          <header className="sticky-header">
+            <div>
+              <h1>The Naming Schools</h1>
+              <div className="subtitle">Three philosophies. One perfect name.</div>
+            </div>
+          </header>
+
+          <div className="container">
+            {!showResults && (
+              <div className="intro">
+                <h2>What are you naming?</h2>
+                <p>Describe your product, service, or idea. Three naming masters will compete to find your name.</p>
+              </div>
+            )}
+
+            {!showResults && (
+              <div className="input-area">
+                <textarea
+                  value={desc}
+                  onChange={e => setDesc(e.target.value)}
+                  placeholder="A meditation app for people who hate meditation. It uses 60-second breathing exercises disguised as phone games..."
+                />
+                <div className="api-key-row">
+                  <label>API Key</label>
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={e => setApiKey(e.target.value)}
+                    placeholder="sk-ant-..."
+                  />
+                </div>
+                {error && <div className="error-msg">{error}</div>}
+                <button
+                  className="generate-btn"
+                  onClick={generate}
+                  disabled={loading || !desc.trim() || !apiKey.trim()}
+                >
+                  {loading ? 'Generating...' : 'Name it →'}
+                </button>
+              </div>
+            )}
+
+            {showResults && (
+              <React.Fragment>
+                <div className="tabs">
+                  {schoolKeys.map(key => (
+                    <button
+                      key={key}
+                      className={`tab ${activeTab === key ? 'active' : ''}`}
+                      data-school={key}
+                      onClick={() => setActiveTab(key)}
+                    >
+                      {SCHOOLS[key].name}
+                      {done[key] && <span className="check">✓</span>}
+                    </button>
+                  ))}
+                </div>
+
+                {schoolKeys.map(key => {
+                  if (activeTab !== key) return null;
+                  const r = results[key];
+
+                  if (!done[key]) {
+                    return (
+                      <div key={key} className="loading-dots">
+                        <span></span><span></span><span></span>
+                      </div>
+                    );
+                  }
+
+                  if (r && r.error) {
+                    return <div key={key} className="error-msg">{r.error}</div>;
+                  }
+
+                  if (!r || !r.candidates) return null;
+
+                  return (
+                    <div key={key}>
+                      {r.candidates.map((c, i) => {
+                        const isTop = c.name === r.topPick;
+                        return (
+                          <div
+                            key={i}
+                            className={`name-card ${isTop ? 'top-pick' : ''}`}
+                            data-school={key}
+                            style={{ animationDelay: `${i * 0.12}s` }}
+                          >
+                            <div className="name-title">
+                              {c.name}
+                              {isTop && <span className="top-badge" data-school={key}>TOP PICK</span>}
+                            </div>
+                            <div className="origin">{c.origin}</div>
+                            <div className="effect">{c.effect}</div>
+                          </div>
+                        );
+                      })}
+                      {r.verdict && (
+                        <div className="verdict-box" style={{ animationDelay: '0.5s' }}>
+                          <div className="verdict-label">Verdict</div>
+                          <div className="verdict-text">"{r.verdict}"</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {allDone && !Object.values(results).some(r => r.error) && (
+                  <div className="shortlist">
+                    <h3>The Shortlist</h3>
+                    <div className="shortlist-grid">
+                      {schoolKeys.map(key => {
+                        const r = results[key];
+                        if (!r || !r.topPick || !r.candidates) return null;
+                        const topCandidate = r.candidates.find(c => c.name === r.topPick) || r.candidates[0];
+                        return (
+                          <div key={key} className="shortlist-card" data-school={key}>
+                            <div className="school-label">{SCHOOLS[key].name}</div>
+                            <div className="pick-name">{r.topPick}</div>
+                            <div className="pick-effect">{topCandidate.effect}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <button className="reset-btn" onClick={reset}>← Start over</button>
+              </React.Fragment>
+            )}
+          </div>
+
+          <footer>
+            The Naming Schools — Built for the joy of naming things well
+          </footer>
+        </React.Fragment>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
