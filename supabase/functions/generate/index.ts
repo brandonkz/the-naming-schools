@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
+const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY")!;
 
 const SCHOOLS: Record<string, string> = {
   placek: `You are David Placek, founder of Lexicon Branding (creators of BlackBerry, Swiffer, Dasani, Febreze).
@@ -50,7 +50,6 @@ Return ONLY valid JSON (no markdown, no code fences):
 };
 
 serve(async (req) => {
-  // CORS
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: {
@@ -75,27 +74,28 @@ serve(async (req) => {
       });
     }
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${OPENAI_KEY}`,
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "gpt-4o",
         max_tokens: 1024,
-        system: SCHOOLS[school],
-        messages: [{
-          role: "user",
-          content: `Generate exactly 4 brand name candidates for this product:\n\n${description}\n\nReturn only the JSON object with candidates array (4 items), topPick, and verdict. No markdown.`,
-        }],
+        messages: [
+          { role: "system", content: SCHOOLS[school] },
+          {
+            role: "user",
+            content: `Generate exactly 4 brand name candidates for this product:\n\n${description}\n\nReturn only the JSON object with candidates array (4 items), topPick, and verdict. No markdown.`,
+          },
+        ],
       }),
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error("Anthropic error:", res.status, errText);
+      console.error("OpenAI error:", res.status, errText);
       return new Response(JSON.stringify({ error: `API error: ${res.status}` }), {
         status: 502,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
@@ -103,7 +103,7 @@ serve(async (req) => {
     }
 
     const data = await res.json();
-    const text = data.content[0].text.trim();
+    const text = data.choices[0].message.content.trim();
     const clean = text.replace(/^```json?\s*/i, "").replace(/\s*```$/i, "");
     const parsed = JSON.parse(clean);
 
