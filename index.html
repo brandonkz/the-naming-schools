@@ -466,7 +466,52 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    const API_URL = 'https://fuddzrlnbrseofguuikp.supabase.co/functions/v1/generate';
+    const SCHOOLS_PROMPTS = {
+      placek: `You are David Placek, founder of Lexicon Branding (creators of BlackBerry, Swiffer, Dasani, Febreze).
+
+Your naming philosophy:
+- Coin names from Latin and Greek roots
+- Use hard consonants (K, X, Z, V, B) for memorability
+- Keep names 1-2 syllables max
+- Name the TRANSFORMATION, not the function
+- Names must have global resonance — work in any language
+- Never use slang, puns, or trend-dependent words
+- The name should feel like it always existed
+
+Return ONLY valid JSON (no markdown, no code fences):
+{"candidates":[{"name":"...","origin":"Latin/Greek root explanation","effect":"What this name makes people feel/think"}],"topPick":"the best name from candidates","verdict":"One sentence explaining why this name wins"}`,
+
+      watkins: `You are Alexandra Watkins, founder of Eat My Words (named brands like Spoonflower, Church of Cupcakes, Gringo Lingo).
+
+Your naming philosophy — apply the SMILE test:
+- S: Suggestive — evokes something about the brand
+- M: Meaningful — resonates with the audience
+- I: Imagery-rich — paints a picture, is visual
+- L: Legs — lends itself to extensions, wordplay, campaigns
+- E: Emotional — makes you feel something, makes you smile
+
+Avoid SCRATCH names:
+- Spelling-challenged, Copycat, Restrictive, Annoying, Tame, Confusing, Hard-to-pronounce
+
+Names should be playful, human, warm. They should make someone smile when they hear it.
+
+Return ONLY valid JSON (no markdown, no code fences):
+{"candidates":[{"name":"...","origin":"What makes this SMILE","effect":"The imagery or feeling it creates"}],"topPick":"the best name from candidates","verdict":"One sentence explaining why this name wins"}`,
+
+      manning: `You are Steve Manning, founder of Igor International (named brands like Lululemon, Trulia, Roku).
+
+Your naming philosophy:
+- Names should be counterintuitive and provocative
+- Create curiosity or mild discomfort — interrupt pattern recognition
+- A name that makes someone stop mid-scroll has done its job
+- Safe names are forgotten names
+- The best names feel slightly wrong at first
+- Embrace weirdness, asymmetry, unexpected sounds
+- If everyone in the room likes it immediately, it's too safe
+
+Return ONLY valid JSON (no markdown, no code fences):
+{"candidates":[{"name":"...","origin":"Why this name is counterintuitive","effect":"The disruption or curiosity it creates"}],"topPick":"the best name from candidates","verdict":"One sentence explaining why this name wins"}`
+    };
 
     const SCHOOLS = {
       placek: { key: 'placek', name: 'Placek / Lexicon', tagline: 'Latin roots, hard sounds' },
@@ -487,6 +532,7 @@
       const [results, setResults] = useState({});
       const [done, setDone] = useState({});
       const [activeTab, setActiveTab] = useState('placek');
+      const [apiKey, setApiKey] = useState(localStorage.getItem('tns_key') || '');
       const [error, setError] = useState('');
       const [showResults, setShowResults] = useState(false);
       const resultsRef = useRef(null);
@@ -495,22 +541,39 @@
       const hasErrors = Object.values(results).some(r => r && r.error);
 
       async function callSchool(schoolKey, description) {
-        const res = await fetch(API_URL, {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ school: schoolKey, description }),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1024,
+            system: SCHOOLS_PROMPTS[schoolKey],
+            messages: [{
+              role: 'user',
+              content: `Generate exactly 4 brand name candidates for this product:\n\n${description}\n\nReturn only the JSON object with candidates array (4 items), topPick, and verdict. No markdown.`
+            }]
+          })
         });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-          throw new Error(err.error || `API error ${res.status}`);
+          const err = await res.text();
+          throw new Error(`API error ${res.status}: ${err.slice(0, 200)}`);
         }
 
-        return await res.json();
+        const data = await res.json();
+        const text = data.content[0].text.trim();
+        const clean = text.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+        return JSON.parse(clean);
       }
 
       async function generate() {
-        if (!desc.trim()) return;
+        if (!desc.trim() || !apiKey.trim()) return;
+        localStorage.setItem('tns_key', apiKey);
 
         setLoading(true);
         setError('');
@@ -613,12 +676,36 @@
                     ))}
                   </div>
 
+                  {!apiKey && (
+                    <div style={{ marginTop: 16 }}>
+                      <input
+                        type="password"
+                        value={apiKey}
+                        onChange={e => setApiKey(e.target.value)}
+                        placeholder="Anthropic API key (sk-ant-...)"
+                        style={{
+                          width: '100%',
+                          padding: '12px 16px',
+                          border: '2px solid var(--border)',
+                          borderRadius: 8,
+                          background: 'var(--card)',
+                          fontFamily: "'DM Mono', monospace",
+                          fontSize: 13,
+                          color: 'var(--text)',
+                        }}
+                      />
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                        Saved locally. Never sent to our servers.
+                      </div>
+                    </div>
+                  )}
+
                   {error && <div className="error-msg">{error}</div>}
 
                   <button
                     className="generate-btn"
                     onClick={generate}
-                    disabled={loading || !desc.trim()}
+                    disabled={loading || !desc.trim() || !apiKey.trim()}
                   >
                     Generate 12 names →
                   </button>
